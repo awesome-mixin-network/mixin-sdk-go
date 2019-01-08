@@ -1,6 +1,6 @@
 package messenger
 
-import "github.com/fox-one/mixin-sdk/mixin"
+import "github.com/MooooonStar/mixin-sdk-go/mixin"
 
 // Messenger mixin messenger
 type Messenger struct {

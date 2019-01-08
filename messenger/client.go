@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fox-one/mixin-sdk/mixin"
+	"github.com/MooooonStar/mixin-sdk-go/mixin"
 	"github.com/gorilla/websocket"
 	"github.com/satori/go.uuid"
 )

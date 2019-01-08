@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/fox-one/mixin-sdk/mixin"
+	"github.com/MooooonStar/mixin-sdk-go/mixin"
 )
 
 func doReadNetwork(ctx context.Context, user *mixin.User) {

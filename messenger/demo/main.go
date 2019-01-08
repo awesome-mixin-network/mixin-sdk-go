@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/fox-one/mixin-sdk/messenger"
+	"github.com/MooooonStar/mixin-sdk-go/messenger"
 )
 
 func main() {

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fox-one/mixin-sdk/utils"
+	"github.com/MooooonStar/mixin-sdk-go/utils"
 )
 
 var m *Messenger

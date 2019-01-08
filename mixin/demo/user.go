@@ -6,7 +6,7 @@ import (
 	"crypto/rsa"
 	"log"
 
-	"github.com/fox-one/mixin-sdk/mixin"
+	"github.com/MooooonStar/mixin-sdk-go/mixin"
 )
 
 func doCreateUser(ctx context.Context, user *mixin.User, pin string) *mixin.User {

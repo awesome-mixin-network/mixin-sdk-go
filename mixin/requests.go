@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/fox-one/mixin-sdk/utils"
+	"github.com/MooooonStar/mixin-sdk-go/utils"
 )
 
 var httpClient = &http.Client{}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/fox-one/mixin-sdk/utils"
+	"github.com/MooooonStar/mixin-sdk-go/utils"
 )
 
 type Attachment struct {
