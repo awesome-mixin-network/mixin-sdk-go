@@ -13,7 +13,8 @@ func main() {
 	//replace with your own listener
 	go m.Run(ctx, messenger.DefaultBlazeListener{})
 
-	user := "7b3f0a95-3ee9-4c1b-8ae9-170e3877d909"
+	//the user your want send message to
+	user := "XXXXXXXX"
 	//must create conversation first. If have created before, use its id to send a message.
 	participant := messenger.Participant{UserID: user, Action: messenger.ActionAdd}
 	conversation, err := m.CreateConversation(ctx, messenger.CategoryContact, participant)

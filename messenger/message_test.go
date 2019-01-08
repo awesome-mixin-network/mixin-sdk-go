@@ -17,7 +17,7 @@ func init() {
 	m = NewMessenger(ClientID, SessionID, PINToken, SessionKey)
 	ctx = context.Background()
 	go m.Run(ctx, DefaultBlazeListener{})
-	userID = "7b3f0a95-3ee9-4c1b-8ae9-170e3877d909"
+	userID = "XXXXXXXXXXXXXXXXXXXXX"
 	conversationId = utils.UniqueConversationId(ClientID, userID)
 }
 
