@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"math"
 	"os"
 	"os/exec"
@@ -18,7 +17,6 @@ import (
 	_ "image/png"
 
 	"github.com/fox-one/mixin-sdk/utils"
-	"github.com/hokaccha/go-prettyjson"
 )
 
 type Button struct {
@@ -43,6 +41,14 @@ type AppCard struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Action      string `json:"action"`
+}
+
+type PlainMessage struct {
+	ConversationID string `json:"conversation_id"`
+	RecipentID     string `json:"recipient_id"`
+	MessageID      string `json:"message_id"`
+	Category       string `json:"category"`
+	Data           string `json:"data"`
 }
 
 // send a text messeage to recipientId
@@ -76,40 +82,9 @@ func (b *Messenger) SendPlainImage(ctx context.Context, conversationId, recipien
 	return nil
 }
 
-// send image in one step, upload to s3 first then to user.
-func (b *Messenger) SendImage(ctx context.Context, conversationId, recipientId string, filename string) error {
-	file, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	bt, err := ioutil.ReadAll(file)
-	if err != nil {
-		return err
-	}
-	conf, format, err := image.DecodeConfig(bytes.NewReader(bt))
-	if err != nil {
-		return err
-	}
-
-	id, _, err := b.Upload(ctx, bt)
-	if err != nil {
-		return err
-	}
-
-	image := Multimedia{
-		AttachmentID: id,
-		MimeType:     "image/" + format,
-		Width:        conf.Width,
-		Height:       conf.Height,
-	}
-	return b.SendPlainImage(ctx, conversationId, recipientId, image)
-}
-
-//do not work yet
+//should have name,size,mime_type in raw
 func (b *Messenger) SendPlainData(ctx context.Context, conversationId, recipientId string, raw Multimedia) error {
 	data, _ := json.Marshal(raw)
-	v, _ := prettyjson.Format(data)
-	log.Println("data", string(v))
 	params := map[string]interface{}{
 		"conversation_id": conversationId,
 		"recipient_id":    recipientId,
@@ -191,6 +166,7 @@ func (b *Messenger) SendAppCard(ctx context.Context, conversationId, recipientId
 	return nil
 }
 
+//should have mime_type,width,height,size,duration(ms) in multimeida
 func (b *Messenger) SendPlainVideo(ctx context.Context, conversationId, recipientId string, video Multimedia) error {
 	data, _ := json.Marshal(video)
 	params := map[string]interface{}{
@@ -205,6 +181,61 @@ func (b *Messenger) SendPlainVideo(ctx context.Context, conversationId, recipien
 		return BlazeServerError(ctx, err)
 	}
 	return nil
+}
+
+// send content to multi-user
+func (b *Messenger) SendPlainMessages(ctx context.Context, messages ...PlainMessage) error {
+	params := map[string]interface{}{"messages": messages}
+	err := writeMessageAndWait(ctx, b.mc, "CREATE_PLAIN_MESSAGES", params)
+	if err != nil {
+		return BlazeServerError(ctx, err)
+	}
+	return nil
+}
+
+// send content to multi-user
+func (b *Messenger) SendGroupMessage(ctx context.Context, content string, recipientId ...string) error {
+	messages := make([]PlainMessage, 0)
+	for _, recipient := range recipientId {
+		message := PlainMessage{
+			ConversationID: utils.UniqueConversationId(b.UserID, recipient),
+			RecipentID:     recipient,
+			MessageID:      UuidNewV4().String(),
+			Category:       "PLAIN_TEXT",
+			Data:           base64.StdEncoding.EncodeToString([]byte(content)),
+		}
+		messages = append(messages, message)
+	}
+	return b.SendPlainMessages(ctx, messages...)
+}
+
+// send image in one step, upload to s3 first then to user.
+func (b *Messenger) SendImage(ctx context.Context, conversationId, recipientId string, filename string) error {
+	file, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	bt, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	conf, format, err := image.DecodeConfig(bytes.NewReader(bt))
+	if err != nil {
+		return err
+	}
+
+	id, _, err := b.Upload(ctx, bt)
+	if err != nil {
+		return err
+	}
+
+	image := Multimedia{
+		AttachmentID: id,
+		MimeType:     "image/" + format,
+		Width:        conf.Width,
+		Height:       conf.Height,
+	}
+	return b.SendPlainImage(ctx, conversationId, recipientId, image)
 }
 
 // send video file to recipientId. I do not find grace package to get video info, so  I use command ffprobe
@@ -266,23 +297,24 @@ func (b *Messenger) SendVideo(ctx context.Context, conversationId, recipientId s
 	return b.SendPlainVideo(ctx, conversationId, recipientId, video)
 }
 
-// send content to multi-user
-func (b *Messenger) SendPlainMessages(ctx context.Context, content string, recipientID ...string) error {
-	messages := make([]interface{}, 0)
-	for _, recipient := range recipientID {
-		message := map[string]interface{}{
-			"conversation_id": utils.UniqueConversationId(ClientID, recipient),
-			"recipient_id":    recipient,
-			"message_id":      UuidNewV4().String(),
-			"category":        "PLAIN_TEXT",
-			"data":            base64.StdEncoding.EncodeToString([]byte(content)),
-		}
-		messages = append(messages, message)
-	}
-	params := map[string]interface{}{"messages": messages}
-	err := writeMessageAndWait(ctx, b.mc, "CREATE_PLAIN_MESSAGES", params)
+func (m *Messenger) SendFile(ctx context.Context, conversationId, recipientId string, filename string, mimeType string) error {
+	file, err := os.Open(filename)
 	if err != nil {
-		return BlazeServerError(ctx, err)
+		return err
 	}
-	return nil
+	bt, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	id, _, err := m.Upload(context.Background(), bt)
+	if err != nil {
+		return err
+	}
+	raw := Multimedia{
+		Name:         filename,
+		AttachmentID: id,
+		Size:         int64(len(bt)),
+		MimeType:     mimeType,
+	}
+	return m.SendPlainData(ctx, conversationId, recipientId, raw)
 }

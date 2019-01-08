@@ -7,6 +7,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
+
+	"github.com/hokaccha/go-prettyjson"
 )
 
 // CreateUser create a new wallet user
@@ -25,6 +28,10 @@ func (user User) CreateUser(ctx context.Context, privateKey *rsa.PrivateKey, ful
 	}
 
 	data, err := user.Request(ctx, "POST", "/users", payload)
+
+	v, _ := prettyjson.Format(data)
+	log.Println("data", string(v))
+
 	if err != nil {
 		return nil, requestError(err)
 	}

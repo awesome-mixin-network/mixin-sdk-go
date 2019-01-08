@@ -1,14 +1,8 @@
 package messenger
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"io/ioutil"
 	"log"
-	"os"
-	"os/exec"
-	"strconv"
 	"testing"
 	"time"
 
@@ -80,98 +74,19 @@ func TestSendSticker(t *testing.T) {
 }
 
 func TestSendImage(t *testing.T) {
-	file, err := os.Open("donate.png")
-	if err != nil {
-		panic(err)
-	}
-	bt, err := ioutil.ReadAll(file)
-	if err != nil {
-		panic(err)
-	}
-	id, _, err := m.Upload(ctx, bt)
-	if err != nil {
-		panic(err)
-	}
-
-	image := Multimedia{
-		AttachmentID: id,
-		MimeType:     "image/png",
-		Width:        256,
-		Height:       256,
-	}
-	if err := m.SendPlainImage(ctx, conversationId, userID, image); err != nil {
-		panic(err)
-	}
-}
-
-func TestSendVideo(t *testing.T) {
-	filename := "123.mp4"
-	file, err := os.Open(filename)
-	if err != nil {
-		panic(err)
-	}
-	bt, err := ioutil.ReadAll(file)
-	if err != nil {
-		panic(err)
-	}
-	id, _, err := m.Upload(ctx, bt)
-	if err != nil {
-		panic(err)
-	}
-
-	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams")
-	cmd.Stdin = bytes.NewReader(bt)
-	info, err := cmd.Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-	var Resp struct {
-		Streams []struct {
-			Width  int `json:"width"`
-			Height int `json:"height"`
-		} `json:"streams"`
-		Format struct {
-			Size     string `json:"size"`
-			Duration string `json:"duration"`
-		} `json:"format"`
-	}
-
-	err = json.Unmarshal(info, &Resp)
-	if err != nil {
-		panic(err)
-	}
-
-	var width, height int
-	for _, stream := range Resp.Streams {
-		if stream.Height > 0 && stream.Width > 0 {
-			width, height = stream.Width, stream.Height
-		}
-	}
-
-	size, _ := strconv.Atoi(Resp.Format.Size)
-	duration, _ := strconv.ParseFloat(Resp.Format.Duration, 64)
-
-	video := Multimedia{
-		AttachmentID: id,
-		MimeType:     "video/mp4",
-		Width:        width,
-		Height:       height,
-		Size:         int64(size),
-		Duration:     int64(duration) * 1000,
-	}
-	if err := m.SendPlainVideo(ctx, conversationId, userID, video); err != nil {
-		panic(err)
-	}
-}
-
-func TestSendImageOneStep(t *testing.T) {
 	if err := m.SendImage(ctx, conversationId, userID, "donate.png"); err != nil {
 		panic(err)
 	}
 }
 
-func TestSendVideoOneStep(t *testing.T) {
+func TestSendVideo(t *testing.T) {
 	if err := m.SendVideo(ctx, conversationId, userID, "123.mp4"); err != nil {
+		panic(err)
+	}
+}
+
+func TestSendFile(t *testing.T) {
+	if err := m.SendFile(ctx, conversationId, userID, "demo.pdf", "application/pdf"); err != nil {
 		panic(err)
 	}
 }
